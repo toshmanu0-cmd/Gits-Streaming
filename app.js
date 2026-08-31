@@ -138,7 +138,6 @@ async function loadCategory(container, genreId) {
   });
 }
 
-loadPublicDomainMovies();
 loadTrending();
 loadCategory(action, 28);
 loadCategory(comedy, 35);
