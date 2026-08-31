@@ -4,6 +4,9 @@ const searchInput = document.getElementById("searchInput");
 const modal = document.getElementById("playerModal");
 const player = document.getElementById("player");
 const closePlayer = document.getElementById("closePlayer");
+const providerLinks = document.getElementById("providerLinks");
+const regionSelect = document.getElementById("regionSelect");
+let currentMovieId = null;
 const trending = document.getElementById("trending");
 const action = document.getElementById("action");
 const comedy = document.getElementById("comedy");
@@ -68,6 +71,41 @@ async function searchMovies(query) {
   }
 }
 
+function renderProviders(data) {
+  const providers = [
+    ...(data.free || []).map(provider => ({ ...provider, kind: "Free" })),
+    ...(data.ads || []).map(provider => ({ ...provider, kind: "Free with ads" })),
+    ...(data.flatrate || []).map(provider => ({ ...provider, kind: "Subscription" }))
+  ];
+  const uniqueProviders = providers.filter((provider, index, list) =>
+    list.findIndex(item => item.provider_id === provider.provider_id) === index
+  );
+
+  if (!uniqueProviders.length || !data.link) {
+    providerLinks.innerHTML = `<span class="providerEmpty">No provider availability was found for ${data.region}.</span>`;
+    return;
+  }
+
+  providerLinks.innerHTML = uniqueProviders.map(provider => `
+    <a class="providerChip" href="${data.link}" target="_blank" rel="noopener noreferrer">
+      <span>${provider.provider_name}</span><small>${provider.kind}</small>
+    </a>
+  `).join("");
+}
+
+async function loadProviders(movieId) {
+  providerLinks.innerHTML = '<span class="providerLoading">Checking legal providers...</span>';
+  try {
+    const region = regionSelect.value;
+    const res = await fetch(`/api/providers/${movieId}?region=${region}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Could not load providers.");
+    renderProviders(data);
+  } catch (error) {
+    providerLinks.innerHTML = `<span class="providerEmpty">${error.message}</span>`;
+  }
+}
+
 async function loadTrailer(movieId) {
   try {
     const res = await fetch(`/api/videos/${movieId}`);
@@ -83,10 +121,12 @@ async function loadTrailer(movieId) {
       return;
     }
 
+    currentMovieId = movieId;
     modal.style.display = "flex";
     document.body.classList.add("modalOpen");
     player.src = `https://www.youtube.com/embed/${trailer.key}?autoplay=1&rel=0`;
     closePlayer.focus();
+    loadProviders(movieId);
   } catch (error) {
     alert(error.message);
   }
@@ -96,6 +136,8 @@ function closeTrailer() {
   modal.style.display = "none";
   document.body.classList.remove("modalOpen");
   player.src = "";
+  currentMovieId = null;
+  providerLinks.innerHTML = "Choose a region to find legal providers.";
 }
 
 closePlayer.onclick = closeTrailer;
@@ -104,6 +146,9 @@ modal.addEventListener("click", event => {
 });
 document.addEventListener("keydown", event => {
   if (event.key === "Escape" && modal.style.display === "flex") closeTrailer();
+});
+regionSelect.addEventListener("change", () => {
+  if (currentMovieId) loadProviders(currentMovieId);
 });
 
 searchBtn.onclick = () => {

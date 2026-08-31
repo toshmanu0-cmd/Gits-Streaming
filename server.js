@@ -94,6 +94,25 @@ app.get("/api/videos/:movieId", async (req, res) => {
   }
 });
 
+app.get("/api/providers/:movieId", async (req, res) => {
+  try {
+    if (!/^\d+$/.test(req.params.movieId)) return res.status(400).json({ error: "A valid movie ID is required." });
+    const region = String(req.query.region || "US").toUpperCase();
+    if (!/^[A-Z]{2}$/.test(region)) return res.status(400).json({ error: "A valid two-letter region code is required." });
+    const data = await tmdb(`/movie/${req.params.movieId}/watch/providers`);
+    const regionData = data.results?.[region] || {};
+    res.json({
+      region,
+      link: regionData.link || null,
+      free: regionData.free || [],
+      ads: regionData.ads || [],
+      flatrate: regionData.flatrate || []
+    });
+  } catch (error) {
+    res.status(error.status || 502).json({ error: error.message });
+  }
+});
+
 app.use(express.static(__dirname));
 app.get("*", (_req, res) => res.sendFile(path.join(__dirname, "index.html")));
 
