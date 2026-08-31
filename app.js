@@ -1,4 +1,3 @@
-const apiKey = "826446f6315c2770ec2d9f2b79b40cee";
 
 const gallery = document.getElementById("gallery");
 const searchBtn = document.getElementById("searchBtn");
@@ -22,10 +21,48 @@ const family = document.getElementById("family");
 const drama = document.getElementById("drama");
 const western = document.getElementById("western");
 const crime = document.getElementById("crime");
+const fullMovies = document.getElementById("fullMovies");
+
+// Curated title: the Internet Archive item identifies this film as public domain.
+// Keep the source link visible so visitors can review the original item and license.
+const publicDomainMovies = [
+  {
+    title: "His Girl Friday",
+    year: 1940,
+    duration: "91 min",
+    poster: "https://archive.org/download/his_girl_friday/__ia_thumb.jpg",
+    embedUrl: "https://archive.org/embed/his_girl_friday",
+    sourceUrl: "https://archive.org/details/his_girl_friday",
+    sourceName: "Internet Archive"
+  }
+];
+
+function loadPublicDomainMovies() {
+  fullMovies.innerHTML = "";
+
+  publicDomainMovies.forEach(movie => {
+    const card = document.createElement("article");
+    card.className = "thumbnail full-movie-card";
+    card.innerHTML = `
+      <img src="${movie.poster}" alt="${movie.title} poster">
+      <span>${movie.title} (${movie.year})</span>
+      <div>Full movie · ${movie.duration}</div>
+      <a href="${movie.sourceUrl}" target="_blank" rel="noopener noreferrer" class="sourceLink">Source: ${movie.sourceName}</a>
+    `;
+
+    card.addEventListener("click", event => {
+      if (event.target.closest("a")) return;
+      modal.style.display = "flex";
+      player.src = movie.embedUrl;
+    });
+
+    fullMovies.appendChild(card);
+  });
+}
 
 async function searchMovies(query) {
   const res = await fetch(
-    `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${encodeURIComponent(query)}`
+    `/api/search?query=${encodeURIComponent(query)}`
   );
 
   const data = await res.json();
@@ -52,7 +89,7 @@ card.innerHTML = `
 
 async function loadTrailer(movieId) {
   const res = await fetch(
-    `https://api.themoviedb.org/3/movie/${movieId}/videos?api_key=${apiKey}`
+    `/api/videos/${movieId}`
   );
 
   const data = await res.json();
@@ -88,7 +125,7 @@ searchInput.addEventListener("keypress", e => {
 });
 async function loadTrending() {
   const res = await fetch(
-    `https://api.themoviedb.org/3/trending/movie/week?api_key=${apiKey}`
+    `/api/trending`
   );
 
   const data = await res.json();
@@ -115,7 +152,7 @@ async function loadTrending() {
 }
 async function loadCategory(container, genreId) {
   const res = await fetch(
-    `https://api.themoviedb.org/3/discover/movie?api_key=${apiKey}&with_genres=${genreId}`
+    `/api/discover?genre=${genreId}`
   );
 
   const data = await res.json();
@@ -140,6 +177,7 @@ async function loadCategory(container, genreId) {
   });
 }
 
+loadPublicDomainMovies();
 loadTrending();
 loadCategory(action, 28);
 loadCategory(comedy, 35);

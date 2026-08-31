@@ -167,3 +167,32 @@ border-radius:10px;
 .movie-row {
   scroll-behavior: smooth;
 }
+
+.sectionNote{
+  padding:0 20px;
+  color:#aaa;
+  margin-top:-10px;
+}
+
+.full-movie-card{
+  min-width:180px;
+}
+
+.full-movie-card div{
+  color:#ccc;
+  font-size:13px;
+  padding-top:5px;
+}
+
+.sourceLink{
+  display:inline-block;
+  color:#ff6b6b;
+  font-size:12px;
+  padding-top:7px;
+  text-decoration:none;
+}
+
+.sourceLink:hover{
+  color:#fff;
+  text-decoration:underline;
+}
