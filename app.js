@@ -22,42 +22,44 @@ const drama = document.getElementById("drama");
 const western = document.getElementById("western");
 const crime = document.getElementById("crime");
 const fullMovies = document.getElementById("fullMovies");
+const locSearchInput = document.getElementById("locSearchInput");
+const locSearchBtn = document.getElementById("locSearchBtn");
 
-// Curated title: the Internet Archive item identifies this film as public domain.
-// Keep the source link visible so visitors can review the original item and license.
-const publicDomainMovies = [
-  {
-    title: "His Girl Friday",
-    year: 1940,
-    duration: "91 min",
-    poster: "https://archive.org/download/his_girl_friday/__ia_thumb.jpg",
-    embedUrl: "https://archive.org/embed/his_girl_friday",
-    sourceUrl: "https://archive.org/details/his_girl_friday",
-    sourceName: "Internet Archive"
-  }
-];
+async function loadPublicDomainMovies(search = "") {
+  fullMovies.innerHTML = "<p class=\"sectionNote\">Loading films...</p>";
 
-function loadPublicDomainMovies() {
-  fullMovies.innerHTML = "";
+  try {
+    const query = search ? `?search=${encodeURIComponent(search)}` : "";
+    const response = await fetch(`/api/loc-movies${query}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Could not load the film catalog.");
 
-  publicDomainMovies.forEach(movie => {
-    const card = document.createElement("article");
-    card.className = "thumbnail full-movie-card";
-    card.innerHTML = `
-      <img src="${movie.poster}" alt="${movie.title} poster">
-      <span>${movie.title} (${movie.year})</span>
-      <div>Full movie · ${movie.duration}</div>
-      <a href="${movie.sourceUrl}" target="_blank" rel="noopener noreferrer" class="sourceLink">Source: ${movie.sourceName}</a>
-    `;
+    fullMovies.innerHTML = "";
+    if (!data.movies.length) {
+      fullMovies.innerHTML = "<p class=\"sectionNote\">No films found. Try another search.</p>";
+      return;
+    }
 
-    card.addEventListener("click", event => {
-      if (event.target.closest("a")) return;
-      modal.style.display = "flex";
-      player.src = movie.embedUrl;
+    data.movies.forEach(movie => {
+      const card = document.createElement("article");
+      card.className = "thumbnail full-movie-card";
+      card.innerHTML = `
+        <img src="${movie.poster}" alt="${movie.title} poster" loading="lazy">
+        <span>${movie.title}${movie.year ? ` (${movie.year})` : ""}</span>
+        <div>Watch at the Library of Congress${movie.duration ? ` · ${movie.duration}` : ""}</div>
+        <a href="${movie.sourceUrl}" target="_blank" rel="noopener noreferrer" class="sourceLink">Open official player</a>
+      `;
+
+      card.addEventListener("click", event => {
+        if (event.target.closest("a")) return;
+        window.open(movie.sourceUrl, "_blank", "noopener,noreferrer");
+      });
+
+      fullMovies.appendChild(card);
     });
-
-    fullMovies.appendChild(card);
-  });
+  } catch (error) {
+    fullMovies.innerHTML = `<p class="sectionNote">${error.message}</p>`;
+  }
 }
 
 async function searchMovies(query) {
@@ -178,6 +180,10 @@ async function loadCategory(container, genreId) {
 }
 
 loadPublicDomainMovies();
+locSearchBtn.onclick = () => loadPublicDomainMovies(locSearchInput.value.trim());
+locSearchInput.addEventListener("keypress", event => {
+  if (event.key === "Enter") loadPublicDomainMovies(locSearchInput.value.trim());
+});
 loadTrending();
 loadCategory(action, 28);
 loadCategory(comedy, 35);
