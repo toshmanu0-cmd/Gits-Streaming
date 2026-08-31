@@ -1,4 +1,3 @@
-
 const gallery = document.getElementById("gallery");
 const searchBtn = document.getElementById("searchBtn");
 const searchInput = document.getElementById("searchInput");
@@ -21,121 +20,122 @@ const family = document.getElementById("family");
 const drama = document.getElementById("drama");
 const western = document.getElementById("western");
 const crime = document.getElementById("crime");
-async function searchMovies(query) {
-  const res = await fetch(
-    `/api/search?query=${encodeURIComponent(query)}`
-  );
 
-  const data = await res.json();
+function makeCard(movie, showOverview = false) {
+  if (!movie.poster_path) return null;
 
-  gallery.innerHTML = "";
+  const card = document.createElement("div");
+  card.className = "thumbnail";
+  card.setAttribute("role", "button");
+  card.setAttribute("tabindex", "0");
+  card.setAttribute("aria-label", `Watch trailer for ${movie.title}`);
 
-  data.results.forEach(movie => {
-    if (!movie.poster_path) return;
+  const rating = Number(movie.vote_average || 0).toFixed(1);
+  const overview = (movie.overview || "No overview available.").slice(0, 100);
+  card.innerHTML = `
+    <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title} poster" loading="lazy">
+    <span>${movie.title}</span>
+    <div>⭐ ${rating}</div>
+    ${showOverview ? `<p>${overview}${overview.length >= 100 ? "..." : ""}</p>` : ""}
+  `;
 
-    const card = document.createElement("div");
-    card.className = "thumbnail";
-
-card.innerHTML = `
-  <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}">
-  <span>${movie.title}</span>
-  <div>⭐ ${movie.vote_average.toFixed(1)}</div>
-  <p>${movie.overview.slice(0,100)}...</p>
-`;
-    card.onclick = () => loadTrailer(movie.id);
-
-    gallery.appendChild(card);
+  const openTrailer = () => loadTrailer(movie.id);
+  card.addEventListener("click", openTrailer);
+  card.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openTrailer();
+    }
   });
+  return card;
+}
+
+async function searchMovies(query) {
+  try {
+    const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Search failed.");
+
+    gallery.innerHTML = "";
+    const cards = (data.results || []).map(movie => makeCard(movie, true)).filter(Boolean);
+    if (!cards.length) {
+      gallery.innerHTML = '<p class="emptyState">No movies found. Try another search.</p>';
+      return;
+    }
+    cards.forEach(card => gallery.appendChild(card));
+  } catch (error) {
+    gallery.innerHTML = `<p class="emptyState">${error.message}</p>`;
+  }
 }
 
 async function loadTrailer(movieId) {
-  const res = await fetch(
-    `/api/videos/${movieId}`
-  );
+  try {
+    const res = await fetch(`/api/videos/${movieId}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Trailer request failed.");
 
-  const data = await res.json();
+    const trailer = (data.results || []).find(video =>
+      video.site === "YouTube" && ["Trailer", "Teaser"].includes(video.type)
+    );
 
-  const trailer = data.results.find(
-    v => v.site === "YouTube" && v.type === "Trailer"
-  );
+    if (!trailer) {
+      alert("No trailer is available for this title yet.");
+      return;
+    }
 
-  if (!trailer) {
-    alert("Trailer not found");
-    return;
+    modal.style.display = "flex";
+    document.body.classList.add("modalOpen");
+    player.src = `https://www.youtube.com/embed/${trailer.key}?autoplay=1&rel=0`;
+    closePlayer.focus();
+  } catch (error) {
+    alert(error.message);
   }
-
-  modal.style.display = "flex";
-  player.src = `https://www.youtube.com/embed/${trailer.key}?autoplay=1`;
 }
 
-closePlayer.onclick = () => {
+function closeTrailer() {
   modal.style.display = "none";
+  document.body.classList.remove("modalOpen");
   player.src = "";
-};
+}
+
+closePlayer.onclick = closeTrailer;
+modal.addEventListener("click", event => {
+  if (event.target === modal) closeTrailer();
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape" && modal.style.display === "flex") closeTrailer();
+});
 
 searchBtn.onclick = () => {
-  if (searchInput.value.trim()) {
-    searchMovies(searchInput.value);
-  }
+  const query = searchInput.value.trim();
+  if (query) searchMovies(query);
 };
-
-searchInput.addEventListener("keypress", e => {
-  if (e.key === "Enter") {
-    searchBtn.click();
-  }
+searchInput.addEventListener("keypress", event => {
+  if (event.key === "Enter") searchBtn.click();
 });
+
 async function loadTrending() {
-  const res = await fetch(
-    `/api/trending`
-  );
-
-  const data = await res.json();
-
-  gallery.innerHTML = "";
-
-  data.results.forEach(movie => {
-    if (!movie.poster_path) return;
-
-    const card = document.createElement("div");
-
-    card.className = "thumbnail";
-
-    card.innerHTML = `
-      <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}">
-      <span>${movie.title}</span>
-      <div>⭐ ${movie.vote_average.toFixed(1)}</div>
-    `;
-
-    card.onclick = () => loadTrailer(movie.id);
-
-    gallery.appendChild(card);
-  });
+  try {
+    const res = await fetch("/api/trending");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Could not load trending movies.");
+    gallery.innerHTML = "";
+    (data.results || []).map(movie => makeCard(movie)).filter(Boolean).forEach(card => gallery.appendChild(card));
+  } catch (error) {
+    gallery.innerHTML = `<p class="emptyState">${error.message}</p>`;
+  }
 }
+
 async function loadCategory(container, genreId) {
-  const res = await fetch(
-    `/api/discover?genre=${genreId}`
-  );
-
-  const data = await res.json();
-
-  container.innerHTML = "";
-
-  data.results.forEach(movie => {
-    if (!movie.poster_path) return;
-
-    const card = document.createElement("div");
-
-    card.className = "thumbnail";
-
-    card.innerHTML = `
-      <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}">
-      <span>${movie.title}</span>
-    `;
-
-    card.onclick = () => loadTrailer(movie.id);
-
-    container.appendChild(card);
-  });
+  try {
+    const res = await fetch(`/api/discover?genre=${genreId}`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Could not load this category.");
+    container.innerHTML = "";
+    (data.results || []).map(movie => makeCard(movie)).filter(Boolean).forEach(card => container.appendChild(card));
+  } catch (error) {
+    container.innerHTML = `<p class="emptyState">${error.message}</p>`;
+  }
 }
 
 loadTrending();
@@ -156,7 +156,5 @@ loadCategory(western, 37);
 loadCategory(crime, 80);
 
 searchInput.addEventListener("input", () => {
-  if(searchInput.value.length > 2){
-    searchMovies(searchInput.value);
-  }
+  if (searchInput.value.trim().length > 2) searchMovies(searchInput.value.trim());
 });
