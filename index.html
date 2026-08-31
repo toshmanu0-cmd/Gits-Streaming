@@ -82,6 +82,23 @@
     <div id="playerContainer">
       <button id="closePlayer" type="button" aria-label="Close trailer">×</button>
       <iframe id="player" title="Movie trailer" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+      <div class="providerPanel">
+        <div class="providerHeader">
+          <h2>Where to watch</h2>
+          <label for="regionSelect">Region
+            <select id="regionSelect">
+              <option value="US">US</option>
+              <option value="GB">UK</option>
+              <option value="CA">Canada</option>
+              <option value="AU">Australia</option>
+              <option value="NG">Nigeria</option>
+              <option value="ZA">South Africa</option>
+            </select>
+          </label>
+        </div>
+        <div id="providerLinks" class="providerLinks" aria-live="polite">Choose a region to find legal providers.</div>
+        <p class="providerAttribution">Availability data provided by JustWatch via TMDB. Links open the official TMDB watch page.</p>
+      </div>
     </div>
   </div>
 

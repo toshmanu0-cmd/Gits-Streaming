@@ -94,6 +94,7 @@ function renderProviders(data) {
 }
 
 async function loadProviders(movieId) {
+  if (!providerLinks || !regionSelect) return;
   providerLinks.innerHTML = '<span class="providerLoading">Checking legal providers...</span>';
   try {
     const region = regionSelect.value;
@@ -137,7 +138,7 @@ function closeTrailer() {
   document.body.classList.remove("modalOpen");
   player.src = "";
   currentMovieId = null;
-  providerLinks.innerHTML = "Choose a region to find legal providers.";
+  if (providerLinks) providerLinks.innerHTML = "Choose a region to find legal providers.";
 }
 
 closePlayer.onclick = closeTrailer;
@@ -147,9 +148,11 @@ modal.addEventListener("click", event => {
 document.addEventListener("keydown", event => {
   if (event.key === "Escape" && modal.style.display === "flex") closeTrailer();
 });
-regionSelect.addEventListener("change", () => {
-  if (currentMovieId) loadProviders(currentMovieId);
-});
+if (regionSelect) {
+  regionSelect.addEventListener("change", () => {
+    if (currentMovieId) loadProviders(currentMovieId);
+  });
+}
 
 searchBtn.onclick = () => {
   const query = searchInput.value.trim();
