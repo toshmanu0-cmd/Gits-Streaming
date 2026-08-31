@@ -21,47 +21,6 @@ const family = document.getElementById("family");
 const drama = document.getElementById("drama");
 const western = document.getElementById("western");
 const crime = document.getElementById("crime");
-const fullMovies = document.getElementById("fullMovies");
-const locSearchInput = document.getElementById("locSearchInput");
-const locSearchBtn = document.getElementById("locSearchBtn");
-
-async function loadPublicDomainMovies(search = "") {
-  fullMovies.innerHTML = "<p class=\"sectionNote\">Loading films...</p>";
-
-  try {
-    const query = search ? `?search=${encodeURIComponent(search)}` : "";
-    const response = await fetch(`/api/loc-movies${query}`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Could not load the film catalog.");
-
-    fullMovies.innerHTML = "";
-    if (!data.movies.length) {
-      fullMovies.innerHTML = "<p class=\"sectionNote\">No films found. Try another search.</p>";
-      return;
-    }
-
-    data.movies.forEach(movie => {
-      const card = document.createElement("article");
-      card.className = "thumbnail full-movie-card";
-      card.innerHTML = `
-        <img src="${movie.poster}" alt="${movie.title} poster" loading="lazy">
-        <span>${movie.title}${movie.year ? ` (${movie.year})` : ""}</span>
-        <div>Watch at the Library of Congress${movie.duration ? ` · ${movie.duration}` : ""}</div>
-        <a href="${movie.sourceUrl}" target="_blank" rel="noopener noreferrer" class="sourceLink">Open official player</a>
-      `;
-
-      card.addEventListener("click", event => {
-        if (event.target.closest("a")) return;
-        window.open(movie.sourceUrl, "_blank", "noopener,noreferrer");
-      });
-
-      fullMovies.appendChild(card);
-    });
-  } catch (error) {
-    fullMovies.innerHTML = `<p class="sectionNote">${error.message}</p>`;
-  }
-}
-
 async function searchMovies(query) {
   const res = await fetch(
     `/api/search?query=${encodeURIComponent(query)}`
@@ -180,10 +139,6 @@ async function loadCategory(container, genreId) {
 }
 
 loadPublicDomainMovies();
-locSearchBtn.onclick = () => loadPublicDomainMovies(locSearchInput.value.trim());
-locSearchInput.addEventListener("keypress", event => {
-  if (event.key === "Enter") loadPublicDomainMovies(locSearchInput.value.trim());
-});
 loadTrending();
 loadCategory(action, 28);
 loadCategory(comedy, 35);

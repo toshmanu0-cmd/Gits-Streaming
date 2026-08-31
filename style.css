@@ -196,24 +196,3 @@ border-radius:10px;
   color:#fff;
   text-decoration:underline;
 }
-
-.catalogControls{
-  display:flex;
-  gap:10px;
-  padding:0 20px 10px;
-  max-width:700px;
-}
-
-.catalogControls input{
-  min-width:0;
-  background:#181818;
-  color:#fff;
-  border:1px solid #444;
-  border-radius:4px;
-}
-
-@media (max-width:600px){
-  .catalogControls{
-    flex-direction:column;
-  }
-}
